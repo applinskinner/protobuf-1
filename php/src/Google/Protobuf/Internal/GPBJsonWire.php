@@ -215,7 +215,13 @@ class GPBJsonWire
             //      trigger_error("Not implemented.", E_ERROR);
             //      break;
             case GPBType::MESSAGE:
-                $value->serializeToJsonStream($output);
+                if ($field->isTimestamp()) {
+                    $timestamp = GPBUtil::formatTimestampValue($value);
+                    $timestamp = json_encode($timestamp);
+                    $output->writeRaw($timestamp, strlen($timestamp));
+                } else {
+                    $value->serializeToJsonStream($output);
+                }
                 break;
             default:
                 user_error("Unsupported type.");

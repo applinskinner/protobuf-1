@@ -699,13 +699,26 @@ class Message
         switch ($field->getType()) {
             case GPBType::MESSAGE:
                 $klass = $field->getMessageType()->getClass();
-                if (!is_object($value) && !is_array($value)) {
-                    throw new \Exception("Expect message.");
-                }
                 $submsg = new $klass;
-                if (!is_null($value) &&
-                    $klass !== "Google\Protobuf\Any") {
-                    $submsg->mergeFromJsonArray($value);
+
+                if ($field->isTimestamp()) {
+                    if (!is_string($value)) {
+                        throw new GPBDecodeException("Expect string.");
+                    }
+                    try {
+                        $date = GPBUtil::parseDateTimeFromTimestamp($value);
+                    } catch (Exception $e) {
+                        throw new GPBDecodeException("Invalid RFC 3339 timestamp");
+                    }
+
+                    $submsg->setSeconds($date->getTimestamp());
+                    $submsg->setNanos($date->format('u') * 1000);
+                } else if ($klass !== "Google\Protobuf\Any") {
+                    if (!is_object($value) && !is_array($value)) {
+                        throw new GPBDecodeException("Expect message.");
+                    }
+
+                    $submsg->mergeFromJsonObject($value);
                 }
                 return $submsg;
             case GPBType::ENUM:
@@ -1260,7 +1273,13 @@ class Message
                 $size += 2;  // size for \"\"
                 break;
             case GPBType::MESSAGE:
-                $size += $value->jsonByteSize();
+                if ($field->isTimestamp()) {
+                    $timestamp = GPBUtil::formatTimestampValue($value);
+                    $timestamp = json_encode($timestamp);
+                    $size += strlen($timestamp);
+                } else {
+                    $size += $value->jsonByteSize();
+                }
                 break;
 #             case GPBType::GROUP:
 #                 // TODO(teboring): Add support.
