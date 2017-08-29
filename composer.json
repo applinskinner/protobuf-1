@@ -1,5 +1,5 @@
 {
-  "name": "google/protobuf",
+  "name": "city-hire/protobuf",
   "type": "library",
   "description": "proto library for PHP",
   "keywords": ["proto"],
@@ -13,6 +13,9 @@
   },
   "suggest": {
     "ext-bcmath": "Need to support JSON deserialization"
+  },
+  "replace": {
+    "google/protobuf": "*"
   },
   "autoload": {
     "psr-4": {

@@ -38,6 +38,9 @@ use Google\Protobuf\Internal\MapField;
 
 class GPBUtil
 {
+    const NANOS_PER_MILLISECOND = 1000000;
+    const NANOS_PER_MICROSECOND = 1000;
+
     public static function divideInt64ToInt32($value, &$high, &$low, $trim = false)
     {
         $isNeg = (bccomp($value, 0) < 0);
@@ -339,5 +342,33 @@ class GPBUtil
           $result = bcsub(0, $result);
         }
         return $result;
+    }
+
+    public static function parseDateTimeFromTimestamp($value)
+    {
+        return new \DateTime($value, new \DateTimeZone("UTC"));
+    }
+
+    public static function formatTimestampValue($value)
+    {
+        $nanoseconds = static::formatNanoseconds($value->getNanos());
+        if (!empty($nanoseconds)) {
+            $nanoseconds = '.'.$nanoseconds;
+        }
+        return date('Y-m-d\TH:i:s'.$nanoseconds.'\Z', $value->getSeconds());
+    }
+
+    private static function formatNanoseconds($nanoseconds)
+    {
+        if ($nanoseconds == 0) {
+            return '';
+        }
+        if ($nanoseconds % static::NANOS_PER_MILLISECOND == 0) {
+            return sprintf('%03d', $nanoseconds / static::NANOS_PER_MILLISECOND);
+        }
+        if ($nanoseconds % static::NANOS_PER_MICROSECOND == 0) {
+            return sprintf('%06d', $nanoseconds / static::NANOS_PER_MICROSECOND);
+        }
+        return sprintf('%09d', $nanoseconds);
     }
 }
