@@ -450,4 +450,13 @@ class EncodeDecodeTest extends TestBase
         $to->mergeFromJsonString($data);
         $this->expectFields($to);
     }
+
+    public function testJsonEncodeNumericalStringMapKey()
+    {
+        $from = new TestMessage();
+        $from->setMapStringString(["0" => "a"]);
+        $data = $from->serializeToJsonString();
+        $to = new TestMessage();
+        $to->mergeFromJsonString($data);
+    }
 }
