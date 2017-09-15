@@ -700,25 +700,9 @@ class Message
             case GPBType::MESSAGE:
                 $klass = $field->getMessageType()->getClass();
                 $submsg = new $klass;
-
-                if ($field->isTimestamp()) {
-                    if (!is_string($value)) {
-                        throw new GPBDecodeException("Expect string.");
-                    }
-                    try {
-                        $timestamp = GPBUtil::parseTimestamp($value);
-                    } catch (\Exception $e) {
-                        throw new GPBDecodeException("Invalid RFC 3339 timestamp: ".$e->getMessage());
-                    }
-
-                    $submsg->setSeconds($timestamp->getSeconds());
-                    $submsg->setNanos($timestamp->getNanos());
-                } else if ($klass !== "Google\Protobuf\Any") {
-                    if (!is_object($value) && !is_array($value)) {
-                        throw new GPBDecodeException("Expect message.");
-                    }
-
-                    $submsg->mergeFromJsonArray($value);
+                if (!is_null($value) &&
+                    $klass !== "Google\Protobuf\Any") {
+                    $submsg->mergeFromJsonObject($value);
                 }
                 return $submsg;
             case GPBType::ENUM:
@@ -842,9 +826,9 @@ class Message
         }
     }
 
-    private function mergeFromJsonArray($array)
+    private function mergeFromJsonObject($object)
     {
-        foreach ($array as $key => $value) {
+        foreach ($object as $key => $value) {
             $field = $this->desc->getFieldByJsonName($key);
             if (is_null($field)) {
                 $field = $this->desc->getFieldByName($key);
@@ -913,13 +897,13 @@ class Message
      */
     public function parseFromJsonStream($input)
     {
-        $array = json_decode($input->getData(), JSON_BIGINT_AS_STRING);
-        if (is_null($array)) {
+        $object = json_decode($input->getData(), false, 512, JSON_BIGINT_AS_STRING);
+        if (is_null($object)) {
             throw new GPBDecodeException(
                 "Cannot decode json string.");
         }
         try {
-            $this->mergeFromJsonArray($array);
+            $this->mergeFromJsonObject($object);
         } catch (Exception $e) {
             throw new GPBDecodeException($e->getMessage());
         }
