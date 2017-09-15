@@ -700,8 +700,24 @@ class Message
             case GPBType::MESSAGE:
                 $klass = $field->getMessageType()->getClass();
                 $submsg = new $klass;
-                if (!is_null($value) &&
-                    $klass !== "Google\Protobuf\Any") {
+
+                if ($field->isTimestamp()) {
+                    if (!is_string($value)) {
+                        throw new GPBDecodeException("Expect string.");
+                    }
+                    try {
+                        $timestamp = GPBUtil::parseTimestamp($value);
+                    } catch (\Exception $e) {
+                        throw new GPBDecodeException("Invalid RFC 3339 timestamp: ".$e->getMessage());
+                    }
+
+                    $submsg->setSeconds($timestamp->getSeconds());
+                    $submsg->setNanos($timestamp->getNanos());
+                } else if ($klass !== "Google\Protobuf\Any") {
+                    if (!is_object($value) && !is_array($value)) {
+                        throw new GPBDecodeException("Expect message.");
+                    }
+
                     $submsg->mergeFromJsonObject($value);
                 }
                 return $submsg;
