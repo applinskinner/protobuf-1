@@ -1,5 +1,7 @@
 <?php
 
+require_once('../vendor/autoload.php');
+
 function getGeneratedFiles($dir, &$results = array())
 {
     $files = scandir($dir);
